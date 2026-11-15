@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+*.log
+
+# build output
+dist/
+dist-unified/
+dist-win/
+build_out.txt
+
+# misc local dev artifacts
+movfix.js
+soundeffects/
+public/logo1.svg
+
+.DS_Store

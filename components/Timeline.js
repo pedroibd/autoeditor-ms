@@ -1,0 +1,672 @@
+"use client";
+import { useCallback, useRef, useState } from "react";
+import { transitionOf } from "../lib/transitions";
+import { collectDropFiles } from "./Dropzone";
+
+function label(t) {
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  const base = `${m}:${String(s).padStart(2, "0")}`;
+  // [MOD] show milliseconds when the time has them (e.g. 0:03.135)
+  const ms = Math.round((t * 1000) % 1000);
+  return ms > 0 ? `${base}.${String(ms).padStart(3, "0")}` : base;
+}
+
+// Filename without its extension, for the clip caption.
+function stem(name) {
+  if (!name) return "";
+  const i = name.lastIndexOf(".");
+  return i > 0 ? name.slice(0, i) : name;
+}
+
+// Slice a full-file waveform down to the trimmed region [offset, offset+duration].
+function slicePeaks(peaks, sourceDuration, offset, duration) {
+  if (!peaks || !peaks.length) return peaks;
+  const src = sourceDuration || duration;
+  if (!src) return peaks;
+  const n = peaks.length;
+  const a = Math.max(0, Math.min(n - 1, Math.floor((offset / src) * n)));
+  const b = Math.min(n, Math.ceil(((offset + duration) / src) * n));
+  return peaks.slice(a, Math.max(a + 1, b));
+}
+
+function Waveform({ peaks, style }) {
+  if (!peaks || !peaks.length) return <div className="wave wave--empty" style={style} />;
+  const n = peaks.length;
+  if (n === 1) {
+    return <div className="wave" style={style}><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0,4 L100,4 L100,96 L0,96 Z" /></svg></div>;
+  }
+  const step = 100 / (n - 1);
+  const amp = 46;
+  let d = `M0,${(50 - peaks[0] * amp).toFixed(2)}`;
+  for (let i = 1; i < n; i++) {
+    d += `L${(i * step).toFixed(2)},${(50 - peaks[i] * amp).toFixed(2)}`;
+  }
+  d += `L100,${(50 + peaks[n - 1] * amp).toFixed(2)}`;
+  for (let i = n - 2; i >= 0; i--) {
+    d += `L${(i * step).toFixed(2)},${(50 + peaks[i] * amp).toFixed(2)}`;
+  }
+  d += "Z";
+  return (
+    <svg className="wave" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style={style}
+      shapeRendering="geometricPrecision">
+      <path d={d} />
+    </svg>
+  );
+}
+
+// The signature element: a scrubbable track with a fixed label gutter. Clips,
+// waveform, playhead and click-to-seek all share the track's coordinate space.
+export default function Timeline({
+  clips, imageEls, duration, time, peaks, activeName, badClips, playing,
+  transitionsByName, motionByName, selectedName, onSelect,
+  onSeek, onScrubStart, onScrubEnd, onOpen, onAdd, onAddFiles, onResizeBoundary,
+  trimEnd, onTrimChange,
+  zoom = 1,
+  scrollRef,
+  bgClips = [], onBgAdd, onBgMove, onBgTrim, onBgOpen,
+  sfx = [], onSfxAdd, onSfxMove, onSfxOpen,
+  lowerThirds = [], onLtMove, onLtTrim, onLtSelect, selectedLtId,
+}) {
+  const trackRef = useRef(null);
+  const downRef = useRef(null); // pointer-down position, to tell a clip tap from a drag
+  const [hover, setHover] = useState(null); // time under the mouse, for the hover indicator
+  const [pop, setPop] = useState(null); // one-shot time-chip pop on click, { t, id }
+  const popIdRef = useRef(0);
+  const [over, setOver] = useState(false); // a file is being dragged over the video lane
+  const [scrubbing, setScrubbing] = useState(false); // playhead grip fills while dragging
+
+  // Accept a dropped image/video (or folder) straight onto the video lane: the
+  // files are re-collected exactly like the import buttons and handed to the
+  // same addImages pipeline, which places them by their timestamped names.
+  const onDropFiles = useCallback(async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setOver(false);
+    const files = await collectDropFiles(e, "image/*,video/*");
+    if (files.length && onAddFiles) onAddFiles(files);
+  }, [onAddFiles]);
+
+  const onHoverMove = useCallback((e) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right) { setHover(null); return; }
+    setHover(((e.clientX - r.left) / r.width) * duration);
+  }, [duration]);
+  const onHoverLeave = useCallback(() => setHover(null), []);
+
+  // Capture-phase pointerdown: fires even when a child stops propagation
+  // (cut chips, clips, markers). Pops a short time chip at the click point.
+  const onPop = useCallback((e) => {
+    const el = trackRef.current;
+    if (!el || !duration) return;
+    const r = el.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right) return;
+    popIdRef.current += 1;
+    setPop({ t: ((e.clientX - r.left) / r.width) * duration, id: popIdRef.current });
+  }, [duration]);
+
+  // Convert a pointer x over the track into a timeline time (used by the
+  // hover "+" drop so an uploaded clip lands where the pointer is).
+  const laneXToTime = useCallback((clientX) => {
+    const el = trackRef.current;
+    if (!el || !duration) return 0;
+    const r = el.getBoundingClientRect();
+    const x = Math.min(Math.max(clientX - r.left, 0), r.width);
+    return (x / r.width) * duration;
+  }, [duration]);
+
+  // Click empty FX-lane space to drop the selected sound at the pointer.
+  const onFxLaneDown = useCallback((e) => {
+    if (e.target !== e.currentTarget || !onSfxAdd) return;
+    onSfxAdd(+laneXToTime(e.clientX).toFixed(3));
+  }, [onSfxAdd, laneXToTime]);
+
+  // An FX marker opens its edit popover on a clean tap; dragging it (>4px) moves
+  // the sound along the lane instead.
+  const onSfxMarkerDown = useCallback((e, id) => {
+    e.stopPropagation();
+    const origin = { x: e.clientX, y: e.clientY };
+    let moved = false;
+    const move = (ev) => {
+      if (!moved && Math.hypot(ev.clientX - origin.x, ev.clientY - origin.y) > 4) moved = true;
+      if (moved && onSfxMove) onSfxMove(id, +laneXToTime(ev.clientX).toFixed(3));
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      if (!moved && onSfxOpen) onSfxOpen(id);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }, [laneXToTime, onSfxMove, onSfxOpen]);
+
+  // Click empty BG-lane space to drop the pending audio clip at the pointer.
+  const onBgLaneDown = useCallback((e) => {
+    if (e.target !== e.currentTarget || !onBgAdd) return;
+    onBgAdd(+laneXToTime(e.clientX).toFixed(3));
+  }, [onBgAdd, laneXToTime]);
+
+  // A lower-third clip: tap selects it (so the side panel can edit its key),
+  // drag slides it anywhere along its own lane. The grip offset is preserved so
+  // the clip doesn't jump to the cursor on the first move.
+  const onLtClipDown = useCallback((e, id) => {
+    e.stopPropagation();
+    const clip = lowerThirds.find((c) => c.id === id);
+    if (!clip) return;
+    const offset = laneXToTime(e.clientX) - clip.start;
+    const origin = { x: e.clientX, y: e.clientY };
+    let moved = false;
+    const move = (ev) => {
+      if (!moved && Math.hypot(ev.clientX - origin.x, ev.clientY - origin.y) > 4) moved = true;
+      if (moved && onLtMove) onLtMove(id, +Math.max(0, laneXToTime(ev.clientX) - offset).toFixed(3));
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      if (!moved && onLtSelect) onLtSelect(id);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+  }, [lowerThirds, laneXToTime, onLtMove, onLtSelect]);
+
+  const MIN_LT = 0.3; // never let a lower third collapse below this many seconds
+
+  // Drag either edge of the clip. The left edge also advances `offset` into the
+  // source file, so trimming the head keeps the frame you're looking at instead of
+  // re-showing the part that was cut off.
+  const onLtTrimDown = useCallback((e, id, edge) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const c = lowerThirds.find((x) => x.id === id);
+    if (!c || !onLtTrim) return;
+    const startX = e.clientX;
+    const cStart = c.start, cOffset = c.offset || 0, cDur = c.duration;
+    const cSrc = c.sourceDuration || c.duration;
+    const move = (ev) => {
+      const el = trackRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const dSecs = ((ev.clientX - startX) / r.width) * duration;
+      if (edge === "left") {
+        const lo = Math.max(0, cStart - cOffset);      // can't skip before the file's start
+        const hi = cStart + cDur - MIN_LT;
+        const newStart = Math.min(Math.max(cStart + dSecs, lo), hi);
+        const delta = newStart - cStart;
+        onLtTrim(id, {
+          start: +newStart.toFixed(3),
+          offset: +(cOffset + delta).toFixed(3),
+          duration: +(cDur - delta).toFixed(3),
+        });
+      } else {
+        const maxDur = cSrc - cOffset;
+        const newDur = Math.min(Math.max(cDur + dSecs, MIN_LT), maxDur);
+        onLtTrim(id, { duration: +newDur.toFixed(3) });
+      }
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+  }, [lowerThirds, duration, onLtTrim]);
+
+  // A BG clip opens its volume popover on a clean tap; dragging it (>4px) moves it
+  // along the lane instead (keeping the pointer's grip offset, so it doesn't jump).
+  const onBgClipDown = useCallback((e, id) => {
+    e.stopPropagation();
+    const clip = bgClips.find((c) => c.id === id);
+    if (!clip) return;
+    const offset = laneXToTime(e.clientX) - clip.start;
+    const origin = { x: e.clientX, y: e.clientY };
+    let moved = false;
+    const move = (ev) => {
+      if (!moved && Math.hypot(ev.clientX - origin.x, ev.clientY - origin.y) > 4) moved = true;
+      if (moved && onBgMove) onBgMove(id, +Math.max(0, laneXToTime(ev.clientX) - offset).toFixed(3));
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      if (!moved && onBgOpen) onBgOpen(id);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }, [bgClips, laneXToTime, onBgMove, onBgOpen]);
+
+  // Drag a BG clip's edge handle to trim it: the left handle moves the clip's
+  // in-point (shifting `offset` into the source), the right handle changes length.
+  const MIN_BG = 0.3; // never let a BG clip collapse below this many seconds
+  const onBgTrimDown = useCallback((e, id, edge) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const c = bgClips.find((x) => x.id === id);
+    if (!c || !onBgTrim) return;
+    const startX = e.clientX;
+    const cStart = c.start, cOffset = c.offset || 0, cDur = c.duration;
+    const cSrc = c.sourceDuration || c.duration;
+    const move = (ev) => {
+      const el = trackRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const dSecs = ((ev.clientX - startX) / r.width) * duration;
+      if (edge === "left") {
+        const lo = Math.max(0, cStart - cOffset);      // can't skip before the file's start
+        const hi = cStart + cDur - MIN_BG;
+        const newStart = Math.min(Math.max(cStart + dSecs, lo), hi);
+        const delta = newStart - cStart;
+        onBgTrim(id, { start: +newStart.toFixed(3), offset: +(cOffset + delta).toFixed(3), duration: +(cDur - delta).toFixed(3) });
+      } else {
+        const maxDur = cSrc - cOffset;
+        const newDur = Math.min(Math.max(cDur + dSecs, MIN_BG), maxDur);
+        onBgTrim(id, { duration: +newDur.toFixed(3) });
+      }
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }, [bgClips, duration, onBgTrim]);
+
+  // Scrub the playhead. Reference the track's box for x/width; the ruler and
+  // audio lane are horizontally aligned with it, so this works for all three.
+  const seekAt = useCallback((clientX) => {
+    const el = trackRef.current;
+    if (!el || !duration) return;
+    const r = el.getBoundingClientRect();
+    const x = Math.min(Math.max(clientX - r.left, 0), r.width);
+    onSeek((x / r.width) * duration);
+  }, [duration, onSeek]);
+
+  const onScrubDown = useCallback((e) => {
+    setScrubbing(true);
+    if (onScrubStart) onScrubStart();
+    seekAt(e.clientX);
+    const move = (ev) => seekAt(ev.clientX);
+    const up = (ev) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      seekAt(ev.clientX); // make sure the final release position is applied
+      setScrubbing(false);
+      if (onScrubEnd) onScrubEnd();
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }, [seekAt, onScrubStart, onScrubEnd]);
+
+  const MIN_TRIM = 1;      // never allow a zero-length export
+  const SNAP_PX = 8;       // snap to a clip boundary within this many pixels
+
+  const trimAt = useCallback((clientX) => {
+    const el = trackRef.current;
+    if (!el || !duration || !onTrimChange) return;
+    const r = el.getBoundingClientRect();
+    const x = Math.min(Math.max(clientX - r.left, 0), r.width);
+    let secs = (x / r.width) * duration;
+
+    // Snap to the nearest clip start/end boundary when the pointer is close.
+    const snapSecs = (SNAP_PX / r.width) * duration;
+    let best = null, bestD = snapSecs;
+    for (const c of clips) {
+      for (const edge of [c.start, c.start + c.duration]) {
+        const d = Math.abs(edge - secs);
+        if (d <= bestD) { bestD = d; best = edge; }
+      }
+    }
+    if (best != null) secs = best;
+
+    secs = Math.min(Math.max(secs, MIN_TRIM), duration);
+    onTrimChange(+secs.toFixed(3));
+  }, [duration, clips, onTrimChange]);
+
+  const onTrimDown = useCallback((e) => {
+    e.stopPropagation();
+    trimAt(e.clientX);
+    const move = (ev) => trimAt(ev.clientX);
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }, [trimAt]);
+
+  const MIN_CLIP = 0.3; // never let a clip collapse below this many seconds
+  const [drag, setDrag] = useState(null); // { index, sec } during a right-edge resize
+
+  // Map a pointer x to the clamped boundary between clip i and clip i+1.
+  const boundaryAt = useCallback((clientX, i) => {
+    const el = trackRef.current;
+    if (!el || !duration) return null;
+    const a = clips[i], b = clips[i + 1];
+    if (!a || !b) return null;
+    const r = el.getBoundingClientRect();
+    const x = Math.min(Math.max(clientX - r.left, 0), r.width);
+    const secs = (x / r.width) * duration;
+    const lo = a.start + MIN_CLIP;
+    const hi = (b.start + b.duration) - MIN_CLIP;
+    return Math.min(Math.max(secs, lo), Math.max(lo, hi));
+  }, [duration, clips]);
+
+  const onResizeDown = useCallback((e, i) => {
+    e.stopPropagation();
+    setDrag({ index: i, sec: clips[i + 1].start });
+    const move = (ev) => {
+      const s = boundaryAt(ev.clientX, i);
+      if (s != null) setDrag({ index: i, sec: s });
+    };
+    const up = (ev) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      const s = boundaryAt(ev.clientX, i);
+      setDrag(null);
+      // Only commit a real change, so a plain click on the grip adds no history.
+      if (s != null && onResizeBoundary && Math.abs(s - clips[i + 1].start) > 0.001) {
+        onResizeBoundary(clips[i + 1].name, s);
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }, [boundaryAt, clips, onResizeBoundary]);
+
+  // A clip opens the inspector only on a clean tap, not a drag/scroll.
+  const onClipClick = useCallback((name, e) => {
+    const d = downRef.current;
+    if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 6 && onOpen) onOpen(name);
+  }, [onOpen]);
+
+  const step = duration > 180 ? 30 : duration > 90 ? 15 : duration > 30 ? 10 : 5;
+  const ticks = [];
+  for (let t = 0; t <= duration + 0.001; t += step) ticks.push(Math.round(t));
+
+  // Percent of the track. The row itself grows with zoom via --tl-zoom, so the
+  // full duration always fits and stays reachable by scroll — plain percentages
+  // keep the ruler, clips, waveform and playhead mutually aligned at any zoom.
+  const pctZoom = (v) => `${(v / duration) * 100}%`;
+  const stop = (e) => e.stopPropagation();
+
+  // Give each clip a readable minimum: when the timeline is dense, widen the
+  // track past the container so it scrolls horizontally instead of crushing
+  // clips into slivers. Percentages resolve against this wider track, so the
+  // ruler, clips, waveform and playhead all stay aligned.
+  const rowMin = clips.length ? 30 + clips.length * 72 : 0;
+
+  const trimPos = trimEnd > 0 && trimEnd < duration ? trimEnd : duration;
+  const trimmed = trimPos < duration;
+
+  return (
+    <div className="tl" style={{ "--tl-min": `${rowMin}px`, "--tl-zoom": zoom }} ref={scrollRef} onPointerMove={onHoverMove} onPointerLeave={onHoverLeave} onPointerDownCapture={onPop}>
+      <div className="tl__row tl__row--ruler">
+        <div className="tl__gutter" aria-hidden="true" />
+        <div className="tl__ruler tl__scrub" onPointerDown={onScrubDown} data-tip="Drag to move the playhead — or use ← / → to seek">
+          {ticks.map((t) => (
+            <span className="tl__tick" key={t} style={{ left: pctZoom(t) }}>
+              <i className="tl__tickline" />
+              {label(t)}
+            </span>
+          ))}
+          {pop && (
+            <span
+              className="tl__poplabel"
+              key={pop.id}
+              style={{ left: pctZoom(pop.t) }}
+              onAnimationEnd={() => setPop(null)}
+            >
+              {label(pop.t)}
+            </span>
+          )}
+          {hover != null && (
+            <span className="tl__hoverlabel" style={{ left: pctZoom(hover) }}>{label(hover)}</span>
+          )}
+        </div>
+      </div>
+
+      <div className="tl__row tl__row--cuts">
+        <div className="tl__gutter" aria-hidden="true" />
+        <div className="tl__cuts">
+          {clips.map((c, i) => {
+            if (i === 0) return null;
+            const tr = transitionOf(transitionsByName && transitionsByName[c.name]);
+            const cls = ["cut"];
+            if (selectedName === c.name) cls.push("is-sel");
+            if (tr.xfade) cls.push("is-on");
+            return (
+              <button
+                key={c.name}
+                type="button"
+                className={cls.join(" ")}
+                style={{ left: pctZoom(c.start) }}
+                title={`Transition: ${tr.label} — click to change`}
+                onPointerDown={stop}
+                onClick={() => onSelect && onSelect(c.name)}
+              >
+                {tr.icon}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="tl__row">
+        <div className="tl__gutter">
+          <span className="tl__tag">V</span>
+          <span className="tl__tag tl__tag--audio" title="Narration waveform">A</span>
+          <span className="tl__tag tl__tag--fx">FX</span>
+          <span className="tl__tag tl__tag--bg">BG</span>
+          {lowerThirds.length > 0 && <span className="tl__tag tl__tag--lt">LT</span>}
+        </div>
+
+        <div className="tl__track" ref={trackRef}>
+          <div
+            className={["tl__lane", "tl__lane--video", over ? "is-over" : ""].filter(Boolean).join(" ")}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setOver(true); }}
+            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); }}
+            onDrop={onDropFiles}
+          >
+            {clips.map((c, i) => {
+              let cStart = c.start, cDur = c.duration;
+              if (drag) {
+                if (i === drag.index) cDur = drag.sec - c.start;
+                else if (i === drag.index + 1) { cStart = drag.sec; cDur = (c.start + c.duration) - drag.sec; }
+              }
+              const style = { left: pctZoom(cStart), width: pctZoom(cDur) };
+
+              if (c.gap) {
+                return (
+                  <div
+                    key={c.name}
+                    className="clip clip--gap"
+                    style={style}
+                    title={`Empty · ${label(cStart)} · ${cDur.toFixed(1)}s`}
+                  >
+                    <button
+                      type="button" className="clip__add" title="Add an image here"
+                      onPointerDown={stop} onClick={() => onAdd && onAdd(c.name)}
+                    >
+                      <span className="clip__plus">+</span>
+                      <span className="clip__meta clip__meta--gap">{cDur.toFixed(1)}s</span>
+                    </button>
+                  </div>
+                );
+              }
+
+              const el = imageEls[c.name];
+              const cls = ["clip"];
+              if (c.name === activeName) cls.push("is-active");
+              if (c.name === selectedName) cls.push("is-selected");
+              if (badClips && badClips.has(c.name)) cls.push("is-bad");
+              const fname = el && el.fileName ? stem(el.fileName) : "";
+              return (
+                <div
+                  key={c.name}
+                  className={cls.join(" ")}
+                  style={{ ...style, backgroundImage: el && el.url ? `url(${el.url})` : undefined }}
+                  title={`${el && el.fileName ? el.fileName + " · " : ""}${label(cStart)} · ${cDur.toFixed(1)}s — click to preview / replace`}
+                  onPointerDown={(e) => { downRef.current = { x: e.clientX, y: e.clientY }; }}
+                  onClick={(e) => onClipClick(c.name, e)}
+                >
+                  <span className="clip__meta">{cDur.toFixed(1)}s</span>
+                  {el && el.isVideo && (
+                    <span className="clip__video" title="Video clip">▶</span>
+                  )}
+                  {motionByName && motionByName[c.name] && motionByName[c.name] !== "none" && (
+                    <span className="clip__motion" title={motionByName[c.name] === "zoomout" ? "Zoom out" : "Zoom in"}>
+                      {motionByName[c.name] === "zoomout" ? "⤡" : "⤢"}
+                    </span>
+                  )}
+                  {fname && <span className="clip__name">{fname}</span>}
+                  {i < clips.length - 1 && (
+                    <span
+                      className="clip__resize"
+                      title="Drag to change how long this image holds"
+                      onPointerDown={(e) => onResizeDown(e, i)}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* [MOD] Waveform of the narration audio, right under the image lane.
+              Click/drag on it to move the playhead, like the ruler. */}
+          <div
+            className="tl__lane tl__lane--audio tl__lane--master tl__scrub"
+            onPointerDown={onScrubDown}
+            title="Narration waveform — click or drag to move the playhead"
+          >
+            <Waveform peaks={peaks} style={{ width: "100%", height: "100%" }} />
+          </div>
+
+          <div
+            className="tl__lane tl__lane--fx"
+            onPointerDown={onFxLaneDown}
+            title="Click to place the selected sound · drag a marker to move · click a marker to edit"
+          >
+            {sfx.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className="sfxmark"
+                style={{ left: pctZoom(s.at) }}
+                title={`${s.name} · ${label(s.at)}`}
+                onPointerDown={(e) => onSfxMarkerDown(e, s.id)}
+              >
+                <span className="sfxmark__line" />
+                <span className="sfxmark__label">{s.name}</span>
+              </button>
+            ))}
+          </div>
+
+          <div
+            className="tl__lane tl__lane--bg"
+            onPointerDown={onBgLaneDown}
+            title="Add an audio layer, then click here to place it · drag a clip to move · click a clip to set volume"
+          >
+            {bgClips.map((c) => (
+              <div
+                key={c.id}
+                className="bgclip"
+                style={{ left: pctZoom(c.start), width: pctZoom(c.duration) }}
+                title={`${c.name} · ${label(c.start)} · ${c.duration.toFixed(1)}s — click for volume, drag to move`}
+                onPointerDown={(e) => onBgClipDown(e, c.id)}
+              >
+                <Waveform
+                  peaks={slicePeaks(c.peaks, c.sourceDuration, c.offset || 0, c.duration)}
+                  style={{ width: "100%", height: "100%" }}
+                />
+                <span className="bgclip__label">{stem(c.name)}</span>
+                <span
+                  className="bgclip__handle bgclip__handle--l"
+                  title="Drag to trim the start"
+                  onPointerDown={(e) => onBgTrimDown(e, c.id, "left")}
+                />
+                <span
+                  className="bgclip__handle bgclip__handle--r"
+                  title="Drag to trim the end"
+                  onPointerDown={(e) => onBgTrimDown(e, c.id, "right")}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* One lane per lower third, each holding its single keyed clip. A
+              lane per clip (rather than one shared lane) is what lets two
+              lower thirds overlap in time instead of colliding. */}
+          {lowerThirds.map((lt) => (
+            <div
+              key={lt.id}
+              className={[
+                "tl__lane",
+                "tl__lane--lt",
+                lt.enabled === false ? "is-off" : "",
+                selectedLtId === lt.id ? "is-sel" : "",
+              ].filter(Boolean).join(" ")}
+              title={`${lt.name} — drag the clip to move it`}
+            >
+              <span className="tl__laneTag">LT</span>
+              <div
+                className="ltclip"
+                style={{ left: pctZoom(lt.start), width: pctZoom(lt.duration) }}
+                title={`${lt.name} · ${label(lt.start)} · ${lt.duration.toFixed(1)}s — drag to move, click to edit`}
+                onPointerDown={(e) => onLtClipDown(e, lt.id)}
+              >
+                <span
+                  className="ltclip__handle ltclip__handle--l"
+                  title="Drag to trim the start"
+                  onPointerDown={(e) => onLtTrimDown(e, lt.id, "left")}
+                />
+                {lt.thumb
+                  ? <img className="ltclip__thumb" src={lt.thumb} alt="" draggable={false} />
+                  : <span className="ltclip__thumb ltclip__thumb--empty" aria-hidden="true" />}
+                <span className="ltclip__label">{lt.name}</span>
+                <span
+                  className="ltclip__handle ltclip__handle--r"
+                  title="Drag to trim the end"
+                  onPointerDown={(e) => onLtTrimDown(e, lt.id, "right")}
+                />
+              </div>
+            </div>
+          ))}
+
+          <div className={`tl__playhead${playing ? " is-play" : ""}${scrubbing ? " is-scrub" : ""}`} style={{ left: pctZoom(time) }}>
+            <span className="tl__playhead-glow" aria-hidden="true" />
+            <span className="tl__playhead-line" aria-hidden="true" />
+            <span className="tl__playhead-grip" />
+          </div>
+
+          {trimmed && (
+            <div
+              className="tl__trim-shade"
+              style={{ left: pctZoom(trimPos), width: pctZoom(duration - trimPos) }}
+              aria-hidden="true"
+            />
+          )}
+          <div
+            className="tl__trim"
+            style={{ left: pctZoom(trimPos) }}
+            onPointerDown={onTrimDown}
+            title="Drag to set where the export ends"
+            role="slider"
+            aria-label="Export end"
+            aria-valuemin={0}
+            aria-valuemax={Math.round(duration)}
+            aria-valuenow={Math.round(trimPos)}
+          >
+            <span className="tl__trim-grip" />
+          </div>
+
+          {hover != null && (
+            <div className="tl__hoverline" style={{ left: pctZoom(hover) }} aria-hidden="true" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

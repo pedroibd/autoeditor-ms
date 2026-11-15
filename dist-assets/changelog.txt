@@ -1,0 +1,304 @@
+Version 1.8
+=========
+NEW — Dark mode
+  The app now has a light and a dark theme, switched with the sun/moon
+  button in the header — on the Projects screen and in the editor both.
+  Your choice is remembered for next time, and the theme is applied
+  before the first frame paints, so it never flashes a white screen on
+  the way in. The panels, timeline, meters and overlays all follow along,
+  and text keeps a readable contrast either way. To force one theme for a
+  single visit, add ?theme=light or ?theme=dark to the address.
+
+NEW — Lower thirds
+  Overlay has a new Lower third panel, just under Image Overlay. Choose a
+  green-screen clip and it lands on the timeline in its own lane, with a
+  poster frame you can drag anywhere along the track. Add it more than
+  once and each one gets its own lane, so several lower thirds can be on
+  screen together instead of fighting for the same space. The green comes
+  out as the picture plays, and again in the export, with no re-encoding
+  and nothing to wait for: similarity, edge softness and spill controls
+  sit in the panel next to the size and the position in the frame. Both
+  clip edges trim like a background clip, and trimming the start keeps
+  the frames you cut away from coming back. Lower thirds last for the
+  session — re-add the file after reloading the page.
+
+Version 1.7.1
+===========
+FIXED — The Voice meter fills its rail
+  Removing the master meter left the rail about half empty, because the bar was
+  a fixed height. The Voice meter now grows to the full height of the rail, so
+  the level column, the dB scale and the volume slider reach all the way down
+  to the timeline instead of stopping short. On phone-width layouts, where the
+  rail sits under the timeline, the bar stays compact as before.
+
+
+Version 1.7
+=========
+NEW — Drag-resizable tool panel
+  The divider between the preview and the right-hand panel is now a real
+  splitter: drag it left or right to give the panel more or less room, and it
+  remembers that width for next time. Click the divider and use ←/→ (hold Shift
+  for bigger steps) if you'd rather not drag, or Home/End to snap it wide or
+  narrow. The panel never takes more than half the window, so a width you set
+  on a big screen can't squeeze the preview on a smaller one. On phone-width
+  layouts the panel stacks under the preview as before.
+
+NEW — Live Voice meter
+  A mixer rail now sits right beside the timeline, always on, showing the
+  narration: one draggable volume slider, a dB scale, and a green / amber / red
+  bar with a peak-hold line that reacts as the audio plays. The meter reads the
+  real preview signal, so what you see is what you're about to export; the
+  voice-over effect is applied before the meter taps, exactly as you hear it.
+  On narrow screens the rail slides back under the timeline.
+
+FIXED — Transport bar centering
+  The time display in the middle of the transport bar now sits exactly in the
+  centre. The bar used to be a flex row, so whichever side was wider took the
+  slack and pushed the clock off to one side; it's laid out on two equal
+  gutters now. Below ~1500px the volume and beat controls move onto their own
+  full-width row instead of being squeezed, and on a phone they stack in three
+  centred rows.
+
+
+Version 1.6
+=========
+NEW — Voice Over Effect
+  A new Voice Over Effect panel (right below Background Music) enhances the
+  narration before it is exported. Pick one of four effects and dial in a
+  strength:
+    Bass Boost    — fuller low end around 110 Hz
+    Clarity       — brighter speech around 3 kHz for a crisper read
+    Compression   — smooths uneven levels so loud and quiet lines sit closer
+    Radio Effect  — a retro telephone band for a lo-fi radio voice
+  Apply the effect and the preview plays it live; Cancel restores the last
+  applied setting. The effect is stored with the project (and in Save Config
+  presets) and bakes into both the FFmpeg and the browser (WebCodecs) exports.
+
+NEW — Save Config presets keep your logo
+  A saved preset now embeds the image overlays themselves — the texture/overlay
+  panel's still or logo AND the watermark — so applying a preset on a fresh
+  project brings them back in the same click; no remove-and-re-add. (Actual
+  overlay video files are still too big for browser storage and must be
+  re-added.)
+
+NEW — Right-side panel is now a tablist
+  The side panel is reorganized into Clipchamp-style tabs: Effects, Captions,
+  Audio, Overlay, and Export. Each group is one click away instead of one long
+  scroll, and only Effects / Audio keep their "↑ Back to top" shortcut.
+
+NEW — Fullscreen preview
+  Hit the ⛶ button (or press F) to watch the preview fullscreen. The time box
+  is now a button too — click it, type any moment (0:07, 1:04.5, 64…), press
+  Enter to jump there. Also new shortcuts: End jumps to the end, + / - zoom
+  the timeline, 0 resets the zoom.
+
+NEW — Timeline time chips
+  Hover the ruler to see the exact time under your cursor, and click anywhere
+  on the timeline to pop a time chip at that spot for a precise seek.
+
+NEW — Tooltips with shortcuts
+  Many controls now show a small tooltip on hover — including the keyboard
+  shortcut where one exists (Space, ←/→, Home/End, F, +/-, Ctrl+Z…).
+
+NEW — Smoother background-music waveform
+  The waveform under the timeline is now rendered as a smooth mirrored path
+  that scales with the audio length, so it stays crisp and fine on long
+  tracks.
+
+NEW — Quick tour
+  The first time you open a project, a short tour points out the import bar,
+  preview, timeline, and the right-side tabs. Replay it any time with the
+  "Quick tour" button in the top bar.
+
+CHANGED — Everything ships as Version 1.6
+  The release assets are now named for this version: the one desktop zip is
+  AutoEditorModv1.6-Linux-macOS-Windows.zip (Windows / macOS Intel / macOS
+  Apple Silicon / Linux, via the four "1 Run-*" launchers) and Android keeps
+  its own tiny AutoEditorModv1.6-Android.zip for Termux. Pushing the "v1.6"
+  tag builds both in CI and publishes them to the release page.
+
+CHANGED — Favorites removed
+  The star-favorites for transitions, motion, and image effects are gone; the
+  "Random mix" option already covers picking a random look for you.
+
+FIXED — Duplicate media imports
+  Re-picking files in the "Add media" picker (or dropping a folder twice) no
+  longer adds the same files twice. The editor collapses files it already has.
+
+NEW — Corner logo overlay
+  A new Logo Overlay panel (right below Image Overlay) drops a small logo in
+  any corner — pick + enlarge or lock to a corner — sized and faded to taste.
+  It bakes into the preview and both exports and can be embedded in Save
+  Config presets.
+
+NEW — Per-clip Mute toggle
+  Open any video clip and hit Mute to silence just that clip's sound during
+  preview and export; the audio-volume slider is kept so Unmute restores it.
+
+NEW — Drop files onto the timeline
+  Drag images or videos straight onto the timeline's video lane and they're
+  imported by their timestamp name — folders work too, exactly like the "Add
+  media" buttons.
+
+NEW — Frame ratio in one click
+  A 16:9 / 9:16 toggle sits right in the transport bar, so the preview and the
+  export match instantly. On the import page, the ratio also auto-detects
+  from your first image (portrait → 9:16, landscape → 16:9).
+
+NEW — Numbered voiceover series
+  Drop several narration files — 1.mp3, 2.mp3, 3.mp3… — and they're merged, in
+  order, into a single voiceover track for the timeline and both exports.
+
+Version 1.5
+=========
+NEW — Save Config presets
+  A new Save Config panel right after Export saves the whole look of a
+  project as a named preset: export settings (aspect, fps, quality),
+  transitions, motion / advanced motion, image effects, scene fades, video
+  overlay, image overlay, and text overlays. Type a name and hit Save, then
+  re-apply any saved preset in one click or delete it. Presets are kept in
+  the browser's storage, so they carry over between projects on the same
+  machine. (Overlay video/image files aren't stored — only their settings —
+  so re-add the file after applying.)
+
+NEW — Back-to-top button
+  A sticky "↑ Back to top" button now sits at the bottom of the side panel
+  (after Text overlays) and scrolls the panel back up to the Export settings.
+
+CHANGED — Everything ships as Version 1.5
+  The release is now ONE zip (AutoEditorModv1.5-Linux-macOS-Windows.zip) for
+  every desktop — it bundles the pre-built app plus four "1 Run-*" launchers, so you pick the one
+  for your machine: Windows, macOS (Intel or Apple Silicon), or Linux. Android
+  (Termux) continues to ship as its own tiny AutoEditorModv1.5-Android.zip.
+  Pushing a version tag such as "v1.5" builds both in CI and publishes them to
+  the release page automatically.
+
+
+Version 1.4
+=========
+NEW — Sound effects
+  A new Sound effects panel with six built-in sounds (Whoosh, Boom,
+  Correct, Click, Shutter, Subtle) plus your own .mp3/.wav uploads. Pick a
+  sound, then click the FX track to drop a marker; drag a marker to move
+  it, and click one to set its volume or remove it. A master volume fades
+  the whole effects bed. Sounds preview in the editor and mix into both the
+  browser (WebCodecs) and FFmpeg exports.
+
+NEW — Background music
+  A BG track for music beds. Add an audio layer, then click the BG track to
+  place it; drag clips to move them, pull either edge to trim, and click a
+  clip to set its volume and fade in/out. Mixed into both exports.
+
+CHANGED — Timeline
+  The voiceover waveform lane is no longer drawn on the timeline. The
+  voiceover still plays in the preview and renders in the final export —
+  only the lane is hidden.
+
+
+Version 1.3
+=========
+NEW — Timed text overlays
+  Place unlimited titles, labels, or call-outs anywhere on the frame with
+  a new Text overlays panel. Each overlay is independent — set its text,
+  start/end time (in seconds), position, size, color, and opacity. Renders
+  identically in the live preview, the browser (WebCodecs) export, and the
+  local FFmpeg backend. Overlays persist across project saves.
+
+NEW — Storage badge tooltip
+  Hovering the storage pill on the home screen explains how much browser
+  storage AutoEditor uses, why it matters, and what happens when it fills.
+
+NEW — Random mix + Favorites stars (Motion & Image Effects)
+  The Advanced Motion Effects and Image Effects panels now mirror the
+  transitions panel: flip "Random mix" to pick any set of effects)Skip
+  Current time now sits beside the Go-to-start button and total duration
+  beside the Go-to-end button, with the old "/" separator removed.
+
+FIXED — Tall-video export on Chrome
+  Exports taller than ~2 megapixels per frame (e.g. a 1216×2160 vertical
+  video at 60fps) no longer fail with an AVC level error — the encoder now
+  automatically selects the correct H.264 level (up to L5.2) for the frame
+  size and frame rate instead of always defaulting to level 4.0.
+
+
+Version 1.2
+=========
+RELEASE — Published on GitHub
+  Project is now open on GitHub:
+  https://github.com/banonggang/autoeditor-mod
+
+NEW — Image Effects panel
+  Apply one of 12 effects per clip — Black & White, Sepia, Warm, Cool,
+  Film Grain, Noise, Heavy Noise, Vignette, VHS, Grunge, and Dust — with
+  an intensity slider. Effects persist across project saves.
+
+NEW — 60fps export
+  Select 60fps in the export panel for smooth playback on high-refresh
+  displays.
+
+NEW — 4K UHD export
+  Scale up to 3840×2160 (or down to 720p for speed). If the device's
+  encoder can't handle the full size, the render automatically falls back
+  to the next supported resolution with an on-screen notice.
+
+CHANGED — Stable effect rendering
+  Effects are seeded per-clip so they no longer flicker or pulse between
+  frames.
+
+CHANGED — Branding
+  Tab title and in-app header renamed to "AutoEditor Mod".
+
+CHANGED — Transport controls
+  Skip buttons switched from emoji ⏪/⏩ to ⏮/⏭ symbols for consistent
+  rendering across platforms.
+
+CHANGED — Home screen links
+  Footer Discord link (BanongGang) replaced with a GitHub link and icon.
+  Removed the upper-right Discord and "Get the Extension" buttons.
+
+CHANGED — Brand logo
+  New AutoEditor Mod logo applied to the home screen, the browser tab
+  favicon, and the unsupported-screen splash.
+
+CHANGED — Version label
+  Current version (v1.2) shown next to the brand on the home screen and
+  in the browser tab title.
+
+REMOVED — Light-leak effect
+  Dropped due to rendering instability. Saved projects that still
+  reference it will load without error — the slot simply renders as None.
+
+
+Version 1.0
+=========
+First public release of AutoEditor Mod.
+
+Core
+  Timestamp-named images plus a voiceover track merged into an MP4 on
+  your own machine — nothing uploaded to the internet.
+
+Editing
+  Drag-and-drop image import, per-clip trim, fit mode (cover / contain),
+  and drag-reorder in the timeline.
+
+Transitions
+  Fade, wipe, zoom, and slide transitions between clips with adjustable
+  duration.
+
+Audio
+  Multiple audio layer support, per-layer volume control, and automatic
+  voice/music sync.
+
+Text
+  Subtitle overlay from SRT or SSA files, per-cue style and size.
+
+Overlays and Watermark
+  Overlay a video or image on top of the main track with opacity and
+  blend-mode controls; optional persistent watermark.
+
+Export
+  WebCodecs (browser-native) and FFmpeg rendering, quality presets, and
+  a real-time progress bar.
+
+Project
+  Save and resume full project state as a JSON file.
