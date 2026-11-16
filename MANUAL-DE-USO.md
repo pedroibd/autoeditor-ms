@@ -82,8 +82,9 @@ A onda de som mostra onde há fala e onde há pausas, o que ajuda a conferir se 
 ## 6. Exportando
 
 1. No painel **Export** (à direita), escolha a proporção (16:9 ou 9:16), o FPS (24, 30 ou 60) e a qualidade (Full, 720p ou 4K).
-2. Inicie a exportação e acompanhe a barra de progresso.
-3. O vídeo baixa pelo navegador e também é salvo automaticamente em `Downloads\AutoEditor`.
+2. Com o interruptor Render engine ativad, o botão Render MP4 usa o FFmpeg do servidor (GPU).
+3. Inicie a exportação e acompanhe a barra de progresso.
+4. O vídeo baixa pelo navegador e também é salvo automaticamente em `Downloads\AutoEditor`.
 
 ## 7. Salvando e retomando
 

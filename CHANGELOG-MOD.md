@@ -6,6 +6,7 @@ Base: AutoEditor Mod (banonggang) v1.8.0, derivado do AutoEditor (Siddique / Try
 - **Faixa A (onda de som)** na timeline, logo abaixo da faixa de imagens (V). Mostra a forma de onda do áudio de narração do projeto; clicar ou arrastar nela move o cursor de reprodução.
 - **Milissegundos nos nomes dos arquivos:** `m-ss-mmm` (ex.: `0-03-135`) e `h-mm-ss-mmm` (ex.: `1-02-05-250`). O último grupo precisa ter exatamente 3 dígitos.
 - Testes novos para o leitor de nomes (`lib/__tests__/timestamp.test.js`).
+- O botão Render MP4 agora usa o FFmpeg do servidor (GPU) por padrão, com o interruptor Render engine.
 - `MANUAL-DE-USO.md` e este changelog.
 
 ## Alterado

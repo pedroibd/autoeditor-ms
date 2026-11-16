@@ -2805,19 +2805,19 @@ if (a.paused) {
             </div>
           )}
 
-          {false && wcAvailable && serverAvailable && (
+          {wcAvailable && serverAvailable && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8, opacity: (busy || wcBusy) ? 0.5 : 1 }}>
               <span style={{ fontSize: 12.5, fontWeight: 600, opacity: 0.85 }}>
-                ⚡ Fast render <span className="cap-meta__name">{wcEnabled ? "· WebCodecs (GPU)" : "· ffmpeg (server)"}</span>
+                Render engine <span className="cap-meta__name">{wcEnabled ? "· Browser (WebCodecs)" : "· FFmpeg (GPU)"}</span>
               </span>
               <button
                 type="button"
-                className={`cap-switch ${wcEnabled ? "is-on" : ""}`}
+                className={`cap-switch ${!wcEnabled ? "is-on" : ""}`}
                 onClick={() => setWcEnabled && setWcEnabled((v) => !v)}
                 disabled={busy || wcBusy}
-                aria-pressed={!!wcEnabled}
-                aria-label="Fast GPU render (WebCodecs)"
-                title="Render on the GPU via WebCodecs — faster for image-only projects (beta)"
+                aria-pressed={!wcEnabled}
+                aria-label="Render with FFmpeg on the server (uses the GPU encoder when available)"
+                title="On: render with the launcher's FFmpeg (NVIDIA h264_nvenc when available). Off: render in the browser (WebCodecs)."
               >
                 <span className="cap-switch__box" />
               </button>
@@ -2827,7 +2827,7 @@ if (a.paused) {
             (wcAvailable || serverAvailable) ? (
               <button
                 className="render"
-                onClick={wcAvailable ? onWebCodecsTest : onRender}
+                onClick={(wcAvailable && (wcEnabled || !serverAvailable)) ? onWebCodecsTest : onRender}
               >Render MP4</button>
             ) : (
               <div className="note">Rendering needs Chrome, Edge, or Safari 16.4+ (WebCodecs) in this browser.</div>

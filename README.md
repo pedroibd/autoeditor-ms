@@ -14,6 +14,7 @@ Transforma **imagens/vídeos nomeados com o tempo em que devem entrar** + **uma 
 | 2 | **Abas de edição separadas da exportação.** As abas de edição (Effects, Captions, Audio, Overlay) ficam à **esquerda** da pré-visualização; o painel **Export** ficou separado, à **direita**. A divisória arrastável agora redimensiona o painel da esquerda. | `components/Editor.js`, `app/globals.css`, `components/QuickTour.js` |
 | 3 | **Milissegundos nos nomes dos arquivos.** Além de `0-05`, agora vale `0-03-135` (minuto-segundo-milissegundo). Os tempos com milissegundos também aparecem na bandeja de importação e nas dicas da timeline. | `lib/timestamp.js`, `lib/__tests__/timestamp.test.js`, `app/page.js`, `components/Timeline.js` |
 | 4 | **Iniciadores em português** para Windows, macOS (Intel e Apple Silicon) e Linux. A lógica é a do projeto base; só mudei as mensagens. | `1 Run-Windows.bat`, `1 Run-macOS-Intel.command`, `1 Run-macOS-Silicon.command`, `1 Run-Linux.sh` |
+| 5 | **Interruptor Render Engine** O botão Render MP4 agora usa o FFmpeg do servidor (GPU) por padrão, com o interruptor Render engine.
 
 Todos os trechos alterados no código têm o comentário `[MOD]`. O histórico detalhado está em [`CHANGELOG-MOD.md`](CHANGELOG-MOD.md) e o passo a passo de uso em [`MANUAL-DE-USO.md`](MANUAL-DE-USO.md).
 

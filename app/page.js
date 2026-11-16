@@ -1234,6 +1234,7 @@ export default function Home() {
         // The blob URLs are live handles into this document, so they resolve
         // fine here; they're just never persisted.
         lowerThirds: lowerThirds.filter((l) => l.url),
+        projectName: (currentProject && currentProject.name) || "",
         onProgress: setProgress,
       });
       setOutUrl(URL.createObjectURL(blob));
@@ -1249,7 +1250,7 @@ export default function Home() {
       overlayFile, overlayUrl, overlayDuration, overlayOpacity, overlayBlendMode, overlayLoop, overlayEnabled,
       watermarkFile, watermarkUrl, watermarkSize, watermarkX, watermarkY, watermarkOpacity, watermarkEnabled,
       logoFile, logoUrl, logoCorner, logoSize, logoOpacity, logoEnabled,
-      textOverlays, lowerThirds]);
+      textOverlays, lowerThirds, currentProject]);
 
   // --- SPIKE: WebCodecs GPU render (video-only, no audio). Proves the pipeline. ---
   const [wcBusy, setWcBusy] = useState(false);
@@ -1264,7 +1265,7 @@ export default function Home() {
   }, []);
   const [wcOk, setWcOk] = useState(false);
   const [serverAvailable, setServerAvailable] = useState(false); // ffmpeg backend reachable?
-  const [wcEnabled, setWcEnabled] = useState(true); // WebCodecs on by default (desktop)
+  const [wcEnabled, setWcEnabled] = useState(false); // Render engine: false = ffmpeg on the server (GPU via the launcher, default); true = browser WebCodecs
   const [wcProfile, setWcProfile] = useState(null); // resolved render profile (mp4)
   const [renderChecked, setRenderChecked] = useState(false); // capability probes done
   useEffect(() => {
