@@ -14,7 +14,7 @@ Transforma **imagens/vídeos nomeados com o tempo em que devem entrar** + **uma 
 | 2 | **Abas de edição separadas da exportação.** As abas de edição (Effects, Captions, Audio, Overlay) ficam à **esquerda** da pré-visualização; o painel **Export** ficou separado, à **direita**. A divisória arrastável agora redimensiona o painel da esquerda. | `components/Editor.js`, `app/globals.css`, `components/QuickTour.js` |
 | 3 | **Milissegundos nos nomes dos arquivos.** Além de `0-05`, agora vale `0-03-135` (minuto-segundo-milissegundo). Os tempos com milissegundos também aparecem na bandeja de importação e nas dicas da timeline. | `lib/timestamp.js`, `lib/__tests__/timestamp.test.js`, `app/page.js`, `components/Timeline.js` |
 | 4 | **Iniciadores em português** para Windows, macOS (Intel e Apple Silicon) e Linux. A lógica é a do projeto base; só mudei as mensagens. | `1 Run-Windows.bat`, `1 Run-macOS-Intel.command`, `1 Run-macOS-Silicon.command`, `1 Run-Linux.sh` |
-| 5 | **Interruptor Render Engine** O botão Render MP4 agora usa o FFmpeg do servidor (GPU) por padrão, com o interruptor Render engine.
+| 5 | **Motor de render: FFmpeg (GPU) por padrão.** O botão **Render MP4** usa o FFmpeg do servidor local (placa NVIDIA via NVENC, quando disponível) em vez do encoder do navegador, que podia travar no meio. O interruptor **Render engine**, acima do botão, volta ao render do navegador (WebCodecs). | `components/Editor.js`, `app/page.js` |
 
 Todos os trechos alterados no código têm o comentário `[MOD]`. O histórico detalhado está em [`CHANGELOG-MOD.md`](CHANGELOG-MOD.md) e o passo a passo de uso em [`MANUAL-DE-USO.md`](MANUAL-DE-USO.md).
 
@@ -89,7 +89,7 @@ Este projeto só existe por causa do trabalho de outras pessoas:
 
 - **AutoEditor** (projeto original) — criado por **Siddique** (TryAIToday / `codewithsiddique-04`): <https://github.com/codewithsiddique-04/autoeditor>
 - **AutoEditor Mod** (base direta desta versão) — modificação feita por **banonggang**: <https://github.com/banonggang/autoeditor-mod>
-- **Esta versão (milissegundos, onda de som, painel Export separado, iniciador em português)** — alterações feitas por **pedroibd** (<https://github.com/pedroibd>).
+- **Esta versão (milissegundos, onda de som, painel Export separado, iniciador em português)** — alterações feitas por **pedroibd** (<https://github.com/pedroibd/autoeditor-ms>).
 
 Os direitos autorais do código original continuam com os autores acima. As alterações desta versão não removem nem alteram a autoria original.
 

@@ -59,8 +59,8 @@ Como a timeline é montada:
 │ Abas de edição│     Pré-visualização     │    Export     │
 │ (esquerda)    │                          │   (direita)   │
 ├───────────────┴──────────────────────────┴───────────────┤
-│                       Timeline                            │
-└───────────────────────────────────────────────────────────┘
+│                       Timeline                           │
+└──────────────────────────────────────────────────────────┘
 ```
 
 - **Esquerda — abas de edição:** Effects, Captions, Audio e Overlay. A divisória entre este painel e a pré-visualização pode ser arrastada (ou use as setas ← → com a divisória selecionada).
@@ -82,7 +82,7 @@ A onda de som mostra onde há fala e onde há pausas, o que ajuda a conferir se 
 ## 6. Exportando
 
 1. No painel **Export** (à direita), escolha a proporção (16:9 ou 9:16), o FPS (24, 30 ou 60) e a qualidade (Full, 720p ou 4K).
-2. Com o interruptor Render engine ativad, o botão Render MP4 usa o FFmpeg do servidor (GPU).
+2. Confira o interruptor **Render engine**, acima do botão de render: **FFmpeg + GPU (NVENC)** (padrão) renderiza pelo servidor, usando a placa NVIDIA; **Browser (WebCodecs)** usa o encoder do navegador. Na janela preta do iniciador aparece `Video encoder: h264_nvenc (GPU / hardware)` quando a placa está sendo usada, ou `libx264 (CPU)` quando não está.
 3. Inicie a exportação e acompanhe a barra de progresso.
 4. O vídeo baixa pelo navegador e também é salvo automaticamente em `Downloads\AutoEditor`.
 
@@ -97,6 +97,7 @@ Você pode salvar o estado do projeto em um arquivo JSON e abri-lo depois para c
 | Erro "Falha ao compilar o app" com um caminho como `D:\#Ferramentas\...` | O caractere **`#`** no nome de uma pasta do caminho impede a compilação. Mova a pasta do projeto para um caminho sem `#` (ex.: `D:\Ferramentas\autoeditor-ms`), apague as pastas `node_modules`, `server\node_modules`, `.next` e `out`, e abra o `.bat` de novo. Evite também outros símbolos estranhos no caminho. |
 | O `.bat` diz que não achou o Node | Instale o Node.js LTS e abra o `.bat` de novo. |
 | Mudei o código e nada mudou | Apague a pasta `out` e abra o `.bat` de novo para recompilar. |
+| O render trava no meio, ou o navegador para de usar a GPU | Deixe o interruptor **Render engine** em **FFmpeg + GPU (NVENC)** e confira, na janela preta, a linha `Video encoder`. Se aparecer `libx264 (CPU)`, atualize o driver da NVIDIA e feche outros programas que usem a placa. |
 | A porta 4000 está ocupada | Rode `stop.bat` e abra o `.bat` outra vez. |
 | Um arquivo aparece como "no time" | O nome não segue os formatos da seção 3. |
 | A imagem entrou no tempo errado (minutos em vez de milissegundos) | Faltou completar os 3 dígitos do milissegundo (`0-03-050`). |
