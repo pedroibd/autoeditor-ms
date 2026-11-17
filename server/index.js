@@ -32,28 +32,6 @@ function defaultOutputDir() {
   return path.join(base, "AutoEditor");
 }
 const OUTPUT_DIR = process.env.OUTPUT_DIR || defaultOutputDir();
-
-// File name for the auto-saved video: the project's name (as shown in the editor),
-// cleaned of characters Windows/macOS/Linux don't allow in file names. Accents and
-// spaces are kept. If a file with that name already exists, " (2)", " (3)"... is
-// added so an earlier render is never overwritten. Falls back to null when the
-// name is empty/unusable (the caller then uses the old autoeditor-<date> name).
-function projectFileBase(name) {
-  if (typeof name !== "string") return null;
-  let n = name
-    .replace(/[\u0000-\u001f<>:"/\\|?*]+/g, " ")  // illegal on Windows (and control chars)
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/[. ]+$/g, "");                          // Windows forbids a trailing dot/space
-  if (!n) return null;
-  if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(n)) n = "_" + n; // reserved Windows names
-  return n.slice(0, 120);
-}
-function uniquePath(dir, base, ext) {
-  let p = path.join(dir, base + ext);
-  for (let i = 2; fssync.existsSync(p); i++) p = path.join(dir, `${base} (${i})${ext}`);
-  return p;
-}
 // Resource limits so a render doesn't hog the machine (mostly for phones/Termux).
 // RENDER_THREADS caps ffmpeg's thread count (0/unset = ffmpeg's default = all cores);
 // RENDER_NICE runs ffmpeg at that OS priority on Unix (0=normal … 19=lowest).
@@ -229,9 +207,13 @@ app.post("/render", newJob, oneAtATime, upload.any(), async (req, res) => {
       if (OUTPUT_DIR) {
         try {
           fssync.mkdirSync(OUTPUT_DIR, { recursive: true });
-          const base = projectFileBase(spec.projectName);
+          // Name the file after the project (e.g. "P-Ep-002.mp4"). Never overwrite an
+          // earlier render: if the name is taken, append " (2)", " (3)"…
+          const base = String(spec.projectName || "")
+            .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_").replace(/[. ]+$/g, "").trim().slice(0, 120);
           if (base) {
-            saved = uniquePath(OUTPUT_DIR, base, ".mp4");
+            saved = path.join(OUTPUT_DIR, `${base}.mp4`);
+            for (let n = 2; fssync.existsSync(saved); n++) saved = path.join(OUTPUT_DIR, `${base} (${n}).mp4`);
           } else {
             const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
             saved = path.join(OUTPUT_DIR, `autoeditor-${stamp}-${req.jobId.slice(0, 6)}.mp4`);

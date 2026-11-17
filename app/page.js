@@ -1231,10 +1231,10 @@ export default function Home() {
         watermarkFile, watermarkUrl, watermarkSize, watermarkX, watermarkY, watermarkOpacity, watermarkEnabled,
         logoFile, logoUrl, logoCorner, logoSize, logoOpacity, logoEnabled,
         textOverlays,
+        projectName: (currentProject && currentProject.name) || "",
         // The blob URLs are live handles into this document, so they resolve
         // fine here; they're just never persisted.
         lowerThirds: lowerThirds.filter((l) => l.url),
-        projectName: (currentProject && currentProject.name) || "",
         onProgress: setProgress,
       });
       setOutUrl(URL.createObjectURL(blob));
@@ -1265,7 +1265,7 @@ export default function Home() {
   }, []);
   const [wcOk, setWcOk] = useState(false);
   const [serverAvailable, setServerAvailable] = useState(false); // ffmpeg backend reachable?
-  const [wcEnabled, setWcEnabled] = useState(false); // Render engine: false = ffmpeg on the server (GPU via the launcher, default); true = browser WebCodecs
+  const [wcEnabled, setWcEnabled] = useState(false); // [MOD] FFmpeg render (server; GPU via NVENC) by default when available
   const [wcProfile, setWcProfile] = useState(null); // resolved render profile (mp4)
   const [renderChecked, setRenderChecked] = useState(false); // capability probes done
   useEffect(() => {
@@ -1296,7 +1296,7 @@ export default function Home() {
     const logs = []; // diagnostics — shown in the failure dialog
     const profile = wcProfile;
     if (!profile) {
-      showAlert("This browser can't encode video. Use Chrome, Edge, or Safari 16.4+.", { title: "Fast render unavailable" });
+      showAlert("This browser can't encode video. Use Chrome, Edge, or Safari 16.4+.", { title: "Browser render unavailable" });
       return;
     }
     const fileName = `${((currentProject && currentProject.name) || "autoeditor").replace(/[^\w.-]+/g, "_") || "autoeditor"}.mp4`;
@@ -1409,8 +1409,8 @@ export default function Home() {
           showAlert("Safari couldn’t finish this render — its video encoder gives up on long videos. Please render in Google Chrome or Microsoft Edge on this Mac (or export a shorter / lower-resolution video).",
             { title: "Use Chrome or Edge for long renders", details });
         } else {
-          showAlert("The Fast render failed. Copy the details below if you want to report it.",
-            { title: "Fast render failed", details });
+          showAlert("The browser render failed. Try \"FFmpeg + GPU (NVENC)\" in the Render engine switch, or copy the details below if you want to report it.",
+            { title: "Browser render failed", details }); // [MOD] texto alinhado ao novo interruptor
         }
       }
     } finally {
@@ -1629,7 +1629,7 @@ export default function Home() {
           wcBusy={wcBusy} wcProgress={wcProgress} wcPhase={wcPhase} wcAvailable={wcOk} serverAvailable={serverAvailable}
           wcEnabled={wcEnabled} setWcEnabled={setWcEnabled}
           onRender={onRender} onCancel={onCancel} busy={busy} progress={progress}
-          outUrl={outUrl} error={error} warnings={warnings}
+          outUrl={outUrl} outName={`${((currentProject && currentProject.name) || "autoeditor").replace(/[^\w.-]+/g, "_") || "autoeditor"}.mp4`} error={error} warnings={warnings}
           replaceImage={replaceImage} removeImage={removeImage} fillGap={fillGap}
           onAddFiles={addImages}
           resizeBoundary={resizeBoundary}

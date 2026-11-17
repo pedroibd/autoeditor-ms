@@ -134,7 +134,7 @@ export default function Editor({
   clips, imageEls, audioUrl, duration, peaks, dims,
   aspect, setAspect, fps, setFps,
   renderQuality = "full", setRenderQuality, renderDims,
-  onRender, onCancel, busy, progress, outUrl, error, warnings,
+  onRender, onCancel, busy, progress, outUrl, outName, error, warnings,
   onWebCodecsTest, onWebCodecsCancel, wcBusy, wcProgress, wcPhase, wcAvailable, serverAvailable, wcEnabled, setWcEnabled,
   replaceImage, removeImage, fillGap, onAddFiles, resizeBoundary,
   transitionsByName, transitionDuration, setTransition, applyTransitionAll, applyTransitionMix, setTransitionDuration,
@@ -2805,19 +2805,20 @@ if (a.paused) {
             </div>
           )}
 
+          {/* [MOD] Interruptor visível: FFmpeg no servidor (GPU via NVENC) ou encoder do navegador (WebCodecs). */}
           {wcAvailable && serverAvailable && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8, opacity: (busy || wcBusy) ? 0.5 : 1 }}>
               <span style={{ fontSize: 12.5, fontWeight: 600, opacity: 0.85 }}>
-                Render engine <span className="cap-meta__name">{wcEnabled ? "· Browser (WebCodecs)" : "· FFmpeg (GPU)"}</span>
+                ⚡ Render engine <span className="cap-meta__name">{wcEnabled ? "· Browser (WebCodecs)" : "· FFmpeg + GPU (NVENC)"}</span>
               </span>
               <button
                 type="button"
-                className={`cap-switch ${!wcEnabled ? "is-on" : ""}`}
+                className={`cap-switch ${wcEnabled ? "is-on" : ""}`}
                 onClick={() => setWcEnabled && setWcEnabled((v) => !v)}
                 disabled={busy || wcBusy}
-                aria-pressed={!wcEnabled}
-                aria-label="Render with FFmpeg on the server (uses the GPU encoder when available)"
-                title="On: render with the launcher's FFmpeg (NVIDIA h264_nvenc when available). Off: render in the browser (WebCodecs)."
+                aria-pressed={!!wcEnabled}
+                aria-label="Render engine"
+                title="Switch between FFmpeg on the server (uses the GPU via NVENC when available) and the browser encoder (WebCodecs)"
               >
                 <span className="cap-switch__box" />
               </button>
@@ -2827,7 +2828,7 @@ if (a.paused) {
             (wcAvailable || serverAvailable) ? (
               <button
                 className="render"
-                onClick={(wcAvailable && (wcEnabled || !serverAvailable)) ? onWebCodecsTest : onRender}
+                onClick={(wcAvailable && (wcEnabled || !serverAvailable)) ? onWebCodecsTest : onRender} // [MOD] respeita o interruptor
               >Render MP4</button>
             ) : (
               <div className="note">Rendering needs Chrome, Edge, or Safari 16.4+ (WebCodecs) in this browser.</div>
@@ -2845,7 +2846,7 @@ if (a.paused) {
               <button className="cancel" onClick={wcBusy ? onWebCodecsCancel : onCancel}>Cancel</button>
             </>
           )}
-          {outUrl && <a className="download" href={outUrl} download="story.mp4">↓ Download MP4</a>}
+          {outUrl && <a className="download" href={outUrl} download={outName || "story.mp4"}>↓ Download MP4</a>}
           {error && <div className="note note--bad">{error}</div>}
         </div>
 
