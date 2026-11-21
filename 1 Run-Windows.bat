@@ -1,10 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title AutoEditor Mod - Milissegundos
+title AutoEditor Mod SN v1.1
 
 REM ================================================================
-REM  AutoEditor Mod (versao com milissegundos) - iniciador do Windows
+REM  AutoEditor Mod SN v1.1 (versao com milissegundos) - iniciador do Windows
 REM  Base: AutoEditor (Siddique / TryAIToday) + AutoEditor Mod (banonggang)
 REM  Mod: nomes de arquivo com milissegundos, forma de onda do audio,
 REM       painel Exportar separado das abas de edicao.
@@ -65,7 +65,7 @@ if not exist "out\index.html" (
 
 echo.
 echo ============================================================
-echo   AutoEditor Mod esta iniciando em http://localhost:4000
+echo   AutoEditor Mod SN esta iniciando em http://localhost:4000
 echo   O navegador vai abrir sozinho.
 echo.
 echo   Para PARAR: feche esta janela ou aperte Ctrl+C.
@@ -84,6 +84,6 @@ REM ---------------------------------------------------------------
 :fail
 setlocal
 set "MSG=%~1"
-powershell -NoProfile -Command "$m=($env:MSG -split '\|') -join [char]10; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show($m,'AutoEditor Mod - Erro de inicio','OK','Error') | Out-Null"
+powershell -NoProfile -Command "$m=($env:MSG -split '\|') -join [char]10; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show($m,'AutoEditor Mod SN - Erro de inicio','OK','Error') | Out-Null"
 endlocal
 exit 1

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# AutoEditor Mod (milissegundos) — iniciador para macOS (Intel x86_64).
+# AutoEditor Mod SN (milissegundos) — iniciador para macOS (Intel x86_64).
 #
 # (Mod: mensagens em português; a lógica é a do projeto base.)
 # Starts the local render backend, which also serves the built UI on
@@ -35,7 +35,7 @@ popup() {
   command -v xmessage >/dev/null 2>&1 && { xmessage -center "$title: $msg" >/dev/null 2>&1 && return 0; }
   return 1
 }
-die()  { popup "AutoEditor Mod — Erro de início" "$*" || true; printf "Error: %s\n" "$*" >&2; exit 1; }
+die()  { popup "AutoEditor Mod SN — Erro de início" "$*" || true; printf "Error: %s\n" "$*" >&2; exit 1; }
 
 # O Next.js não compila se o caminho da pasta tiver o caractere # (ex.: ~/#Ferramentas).
 case "$PWD" in
@@ -69,7 +69,7 @@ bin_ok() {
 }
 
 say ""
-say "AutoEditor Mod — macOS ($SAY_ARCH)"
+say "AutoEditor Mod SN — macOS ($SAY_ARCH)"
 say "============================================================"
 
 # 1) Backend dependencies (ffmpeg-static downloads an arch-specific binary).
@@ -92,7 +92,7 @@ fi
 
 # 3) Happy-path banner, then run in the foreground. Closing this window stops it.
 say ""
-say "O AutoEditor Mod está iniciando em http://localhost:4000"
+say "O AutoEditor Mod SN está iniciando em http://localhost:4000"
 say "O navegador vai abrir sozinho. Deixe esta janela aberta."
 say "Para PARAR: aperte Ctrl+C ou feche esta janela."
 say "============================================================"

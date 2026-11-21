@@ -1,8 +1,8 @@
-# AutoEditor Mod — edição com milissegundos
+# AutoEditor Mod SN v1.1 — edição com milissegundos
 
 Transforma **imagens/vídeos nomeados com o tempo em que devem entrar** + **uma narração** em um MP4, tudo no seu computador. Nada é enviado para a internet.
 
-> Esta é uma versão modificada do **AutoEditor Mod**, que por sua vez é uma modificação do **AutoEditor** original. Veja os [Créditos](#créditos) e a [Licença](#licença) antes de usar ou compartilhar.
+> **AutoEditor Mod SN v1.1** é uma versão modificada do **AutoEditor Mod**, que por sua vez é uma modificação do **AutoEditor** original. Veja os [Créditos](#créditos) e a [Licença](#licença) antes de usar ou compartilhar.
 
 ---
 

@@ -1436,7 +1436,7 @@ export default function Home() {
           <img className="unsupported__logo" src="/logo.svg" width="52" height="52" alt="" />
           <h1 className="unsupported__h">Open in Chrome, Edge, or Safari</h1>
           <p className="unsupported__p">
-            <span className="unsupported__brand">AutoEditor Mod</span> exports video using your
+            <span className="unsupported__brand">AutoEditor Mod SN</span> exports video using your
             browser’s built-in video encoder — which this browser doesn’t have.
           </p>
           <p className="unsupported__p">
@@ -1484,7 +1484,7 @@ export default function Home() {
         <div className="projbar__id">
           <button className="brand__back" onClick={backToProjects} title="Back to your projects">←</button>
           <button className="brand__proj" onClick={renameCurrent} title="Rename project">
-            {currentProject ? (currentProject.name || "Untitled project") : "AutoEditor"}
+            {currentProject ? (currentProject.name || "Untitled project") : "AutoEditor Mod SN"}
           </button>
         </div>
         <div className="bar__io">

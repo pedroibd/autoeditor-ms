@@ -1,4 +1,4 @@
-# Manual de uso — AutoEditor Mod (milissegundos)
+# Manual de uso — AutoEditor Mod SN v1.1 (milissegundos)
 
 ## 1. O que a ferramenta faz
 

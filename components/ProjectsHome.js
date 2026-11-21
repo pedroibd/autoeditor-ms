@@ -71,7 +71,7 @@ export default function ProjectsHome({ projects, onNew, onOpen, onRename, onDele
         <div className="ph__bar">
           <div className="ph__brand">
             <img className="ph__logo" src="/logo.svg" alt="" width="26" height="26" />
-            <span className="ph__name"><span className="ph__pre">AutoEditor</span> Mod <span className="ph__version">v1.8</span></span>
+            <span className="ph__name"><span className="ph__pre">Autoeditor</span> Mod SN <span className="ph__version">v1.1</span></span>
           </div>
           <div className="ph__actions">
             <ThemeToggle />
@@ -139,8 +139,8 @@ export default function ProjectsHome({ projects, onNew, onOpen, onRename, onDele
 
         <footer className="ph__foot">
           <div className="ph__foot-links">
-            <YouTubeLink className="ph__yt" href="https://www.youtube.com/@banong.gangOG" title="BanongGang on YouTube" label="visit channel" />
-            <GitHubLink className="ph__gh" href="https://github.com/banonggang" title="BanongGang on GitHub" label="BanongGang" />
+            <YouTubeLink className="ph__yt" href="https://www.youtube.com/@Pedro_Nexus" title="Pedro Nexus on YouTube" label="visit channel" />
+            <GitHubLink className="ph__gh" href="https://github.com/social-nexus" title="Social Nexus on GitHub" label="Social Nexus" />
           </div>
           <p className="ph__foot-note">Modified <a href="https://www.youtube.com/@TryAIToday" target="_blank" rel="noopener noreferrer" className="ph__foot-link">TryAIToday</a> AutoEditor</p>
         </footer>

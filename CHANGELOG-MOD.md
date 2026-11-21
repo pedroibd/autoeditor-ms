@@ -9,6 +9,7 @@ Base: AutoEditor Mod (banonggang) v1.8.0, derivado do AutoEditor (Siddique / Try
 - `MANUAL-DE-USO.md` e este changelog.
 
 ## Alterado
+- **Nome e versão:** o app agora se chama **AutoEditor Mod SN v1.1** (cabeçalho, título da aba do navegador e iniciadores). A numeração v1.8 era a do projeto base.
 - **Layout do editor:** as abas de edição (Effects, Captions, Audio, Overlay) foram para a esquerda da pré-visualização; **Export** deixou de ser aba e virou um painel próprio à direita; a timeline ocupa a largura toda embaixo. Em telas estreitas (≤ 860 px) o layout empilhado original continua.
 - A divisória arrastável (e as setas do teclado) agora redimensiona o painel da esquerda.
 - O tour rápido (`QuickTour`) descreve o novo layout e ganhou um passo para o painel Export.
